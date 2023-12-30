@@ -182,9 +182,127 @@ app.post("/users/unfollow", async (req, res) => {
     await User.findByIdAndUpdate(targetUserId, {
       $pull: { followers: loggedInUserId },
     });
-    res.status(200).json({message:"Unfollowed Successfully"})
+    res.status(200).json({ message: "Unfollowed Successfully" });
   } catch (error) {
     console.log("Error Unfollowing user", error);
     res.status(500).json({ message: "Error Unfollowing User" });
   }
 });
+
+// End point to create a post
+
+app.post("/create-post", async (req, res) => {
+  try {
+    const { content, userId } = req.body;
+    const newPostData = {
+      user: userId,
+    };
+
+    if (content) {
+      newPostData.content = content;
+    }
+
+    const newPost = new Post(newPostData);
+
+    await newPost.save();
+    res.status(200).json({ message: "Post created successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to Create a Post" });
+  }
+});
+
+//End point for liking a particular user
+
+app.put("/posts/:postId/:userId/like", async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const userId = req.params.userId;
+
+    const post = await Post.findById(postId).populate("user", "name");
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $addToSet: { likes: userId },
+      },
+      { new: true }
+    );
+
+    if (!updatedPost) {
+      return res.status(404).json({ message: "Error Post not found" });
+    }
+
+    updatedPost.user = post.user;
+
+    res.json(updatedPost);
+  } catch (error) {
+    console.log("Error in Liking", error);
+    res.status(500).json({ message: "Failed to like a user" });
+  }
+});
+
+// End point to unlike a post
+
+app.put("/posts/:postId/:userId/unlike", async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const userId = req.params.userId;
+
+    const post = await Post.findById(postId).populate("user", "name");
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $pull: { likes: userId },
+      },
+      { new: true }
+    );
+
+    updatedPost.user = post.user;
+
+    if (!updatedPost) {
+      return res.status(404).json({ message: "Error Post not found" });
+    }
+
+    res.json(updatedPost);
+  } catch (error) {
+    console.log("Error in Liking", error);
+    res.status(500).json({ message: "Failed to Unlike a user" });
+  }
+});
+
+// End point to get all the post
+
+app.get("/get-posts", async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.log("Error Getting the Posts :", error);
+    res
+      .status(500)
+      .json({ message: "An error ocurred while getting the posts" });
+  }
+});
+
+
+// End point for profile screen
+
+app.get("/profile/:userId",async(req,res)=>{
+  try {
+    const userId = req.params.userId
+    const user = await User.findById(userId)
+    if(!user){
+      return res.status(404).json({message: "User not found"})
+    }
+
+    return res.status(200).json({user})
+
+  } catch (error) {
+    console.log("Error while getting the Profile details",error)
+    res.status(500).json({message: "Error while getting the profile details"})
+  }
+})

@@ -22,7 +22,7 @@ import "core-js/stable/atob";
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const {userId , setUserId} = useContext(UserType)
+  const { userId, setUserId } = useContext(UserType);
 
   const navigation = useNavigation();
 
@@ -30,15 +30,15 @@ const LoginScreen = () => {
     const checkLoginStatus = async () => {
       try {
         const token = await AsyncStorage.getItem("authToken");
-        const decodedToken = jwtDecode(token)
-        setUserId(decodedToken.userId)
 
         if (token) {
+          const decodedToken = jwtDecode(token);
+          setUserId(decodedToken.userId);
           navigation.navigate("Main");
         }
       } catch (error) {
         console.log("Error in Login : ", error);
-      } 
+      }
     };
     checkLoginStatus();
   }, []);
@@ -49,6 +49,8 @@ const LoginScreen = () => {
       .post("http://10.0.2.2:3000/login", user)
       .then((response) => {
         const token = response.data.token;
+        const decodedToken = jwtDecode(token);
+        setUserId(decodedToken.userId);
         AsyncStorage.setItem("authToken", token);
         navigation.navigate("Main");
       })
